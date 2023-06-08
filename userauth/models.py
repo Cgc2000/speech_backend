@@ -24,15 +24,6 @@ class AppUserManager(BaseUserManager):
     user.set_password(password)
     user.save(using='speech-dev')
     return user
-  def create_superuser(self, email, password=None):
-    if not email:
-      raise ValueError('An email is required.')
-    if not password:
-      raise ValueError('A password is required.')
-    user = self.create_user(email, password)
-    user.is_superuser = True
-    user.save(using='speech-dev')
-    return user
 
 
 class AppUser(AbstractBaseUser, PermissionsMixin):

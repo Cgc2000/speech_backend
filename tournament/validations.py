@@ -1,5 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
+from .models import TournamentRegister
 UserModel = get_user_model()
 
 def custom_validation(data):
@@ -39,11 +40,32 @@ def custom_validation(data):
 def user_validation(data):
     userId = data['userId']
     if not userId or not UserModel.objects.using('speech-dev').filter(speechCoachUsersId=userId).exists():
-        raise ValidationError('please log in')
+        raise ValidationError('Please log in.')
     return data
 
-def validate_password(data):
-    password = data['password'].strip()
-    if not password:
-        raise ValidationError('a password is needed')
-    return True
+def tournament_validation(data):
+    tournamentId = data['tournamentId']
+    if not tournamentId or not TournamentRegister.objects.using('speech-dev').filter(tournamentId=tournamentId).exists():
+        raise ValidationError('Tournament does not exist.')
+    return data
+
+def competitor_validation(data):
+    registerUserId = data['registerUserId']
+    if not registerUserId or not UserModel.objects.using('speech-dev').filter(speechCoachUsersId=registerUserId).exists():
+        raise ValidationError('Please log in.')
+    tournamentId = data['tournamentId']
+    if not tournamentId or not TournamentRegister.objects.using('speech-dev').filter(tournamentId=tournamentId).exists():
+        raise ValidationError('Tournament does not exist.')
+    competitorSchool = data['competitorSchool']
+    if not competitorSchool:
+        raise ValidationError('Please enter a school name.')
+    coachName = data['coachName']
+    if not coachName:
+        raise ValidationError('Please enter a coach name.')
+    coachEmail = data['coachEmail']
+    if not coachEmail:
+        raise ValidationError('Please enter a coach email.')
+    coachPhone = data['coachPhone']
+    if not coachPhone:
+        raise ValidationError('Please enter a coach phone.')
+    return data
