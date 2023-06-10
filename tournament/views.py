@@ -162,6 +162,29 @@ class GetTournamentByIdView(APIView):
       return Response(response, status=status.HTTP_201_CREATED)
     return Response(status=status.HTTP_400_BAD_REQUEST)
 
+class GetCompetitorsView(APIView):
+  permission_classes = (permissions.AllowAny,)
+  def post(self, request):
+    tournamentId = request.data['tournamentId']
+    competitors = CompetitorSignup.objects.using("speech-dev").filter(tournamentId=tournamentId)
+    if competitors:
+      competitors_dicts = []
+      for i in competitors:
+        competitor_dict = {
+          'competitorId': i.getCompetitorId(),
+          'schoolKey': i.getSchoolKey(),
+          'tournamentId': i.getTournamentId(),
+          'registerUserId': i.getRegisterUserId(),
+          'competitorSchool': i.getCompetitorSchool(),
+          'coachName': i.getCoachName(),
+          'coachEmail': i.getCoachEmail(),
+          'coachPhone': i.getCoachPhone()
+        }
+        competitors_dicts.append(competitor_dict)
+      response = json.dumps(competitors_dicts)
+      return Response(response, status=status.HTTP_201_CREATED)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
+
 class DeleteTournamentView(APIView):
   permission_classes = (permissions.AllowAny,)
   def post(self, request):

@@ -53,6 +53,8 @@ class CompetitorSignup(models.Model):
   coachPhone = models.TextField()
   def getCompetitorId(self):
     return self.competitorId
+  def getSchoolKey(self):
+    return self.schoolKey
   def getTournamentId(self):
     return self.tournamentId
   def getRegisterUserId(self):
