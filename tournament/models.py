@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.postgres.fields import ArrayField
 
 class TournamentRegister(models.Model):
   tournamentId = models.IntegerField(primary_key=True)
@@ -13,6 +14,9 @@ class TournamentRegister(models.Model):
   tournamentState = models.TextField()
   accessCode = models.TextField()
   schoolsEntered = models.IntegerField()
+  events = ArrayField(
+    models.TextField()
+  )
   def getTournamentId(self):
     return self.tournamentId
   def getRegisterUserId(self):
@@ -37,6 +41,8 @@ class TournamentRegister(models.Model):
     return self.accessCode
   def getSchoolsEntered(self):
     return self.schoolsEntered
+  def getEvents(self):
+    return self.events
 
   class Meta:
       managed = True
@@ -71,3 +77,30 @@ class CompetitorSignup(models.Model):
   class Meta:
       managed = True
       db_table = 'speech_competitors'
+
+class Entries(models.Model):
+  entryId = models.IntegerField(primary_key=True)
+  studentId = models.IntegerField()
+  competitorId = models.IntegerField()
+  schoolKey = models.CharField(max_length=1)
+  tournamentId = models.IntegerField()
+  name = models.TextField()
+  event = models.TextField()
+  def getEntryId(self):
+    return self.entryId
+  def getStudentId(self):
+    return self.studentId
+  def getCompetitorId(self):
+    return self.competitorId
+  def getSchoolKey(self):
+    return self.schoolKey
+  def getTournamentId(self):
+    return self.tournamentId
+  def getName(self):
+    return self.name
+  def getEvent(self):
+    return self.event
+
+  class Meta:
+      managed = True
+      db_table = 'speech_entries'

@@ -11,5 +11,8 @@ urlpatterns = [
 	path('signup/', views.CompetitorSignupView.as_view(), name='signup'),
 	path('get_user_entered/', views.GetUserEnteredView.as_view(), name='get_user_entered'),
 	path('delete_competitor/', views.DeleteCompetitorView.as_view(), name='delete_competitor'),
-	path('get_competitors/', views.GetCompetitorsView.as_view(), name='get_competitors')
+	path('get_competitors/', views.GetCompetitorsView.as_view(), name='get_competitors'),
+	path('get_competitor_by_id/', views.GetCompetitorByIdView.as_view(), name='get_competitor_by_id'),
+	path('post_entry/', views.EntriesView.as_view(), name='post_entry'),
+	path('get_entries/', views.GetEntriesView.as_view(), name='get_entries')
 ]

@@ -2,14 +2,14 @@ from django.contrib.auth import get_user_model, login, logout
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import TournamentRegisterSerializer, CompetitorSignupSerializer
+from .serializers import TournamentRegisterSerializer, CompetitorSignupSerializer, EntriesSerializer
 from rest_framework import permissions, status
-from .validations import custom_validation, user_validation, tournament_validation, competitor_validation
+from .validations import custom_validation, user_validation, tournament_validation, competitor_validation, entry_validation
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.forms.models import model_to_dict
 import json
-from .models import TournamentRegister, CompetitorSignup
+from .models import TournamentRegister, CompetitorSignup, Entries
 
 
 class TournamentRegisterView(APIView):
@@ -34,6 +34,17 @@ class CompetitorSignupView(APIView):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     return Response(status=status.HTTP_400_BAD_REQUEST)
 
+class EntriesView(APIView):
+  permission_classes = (permissions.AllowAny,)
+  def post(self, request):
+    clean_data = entry_validation(request.data)
+    serializer = EntriesSerializer(data=clean_data)
+    if serializer.is_valid(raise_exception=True):
+      entry = serializer.create(clean_data)
+      if entry:
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
+
 class GetUserTournamentsView(APIView):
   permission_classes = (permissions.AllowAny,)
   def post(self, request):
@@ -54,7 +65,8 @@ class GetUserTournamentsView(APIView):
         'tournamentCity': i.getTournamentCity(),
         'tournamentState': i.getTournamentState(),
         'accessCode': i.getAccessCode(),
-        'schoolsEntered': i.getSchoolsEntered()
+        'schoolsEntered': i.getSchoolsEntered(),
+        'events': i.getEvents()
       })
       response = json.dumps(tournament_dicts)
       return Response(response, status=status.HTTP_201_CREATED)
@@ -71,6 +83,7 @@ class GetUserEnteredView(APIView):
         tournamentId = i.getTournamentId()
         tournament = TournamentRegister.objects.using("speech-dev").get(tournamentId=tournamentId)
         tournament_dicts.append({
+        'competitorId': i.getCompetitorId(),
         'tournamentId': tournament.getTournamentId(),
         'registerUserId': tournament.getRegisterUserId(),
         'tournamentName': tournament.getTournamentName(),
@@ -82,7 +95,8 @@ class GetUserEnteredView(APIView):
         'tournamentCity': tournament.getTournamentCity(),
         'tournamentState': tournament.getTournamentState(),
         'accessCode': tournament.getAccessCode(),
-        'schoolsEntered': tournament.getSchoolsEntered()
+        'schoolsEntered': tournament.getSchoolsEntered(),
+        'events': tournament.getEvents()
       })
       response = json.dumps(tournament_dicts)
       return Response(response, status=status.HTTP_201_CREATED)
@@ -107,7 +121,8 @@ class GetAllTournamentsView(APIView):
         'tournamentCity': i.getTournamentCity(),
         'tournamentState': i.getTournamentState(),
         'accessCode': i.getAccessCode(),
-        'schoolsEntered': i.getSchoolsEntered()
+        'schoolsEntered': i.getSchoolsEntered(),
+        'events': i.getEvents()
       })
       response = json.dumps(tournament_dicts)
       return Response(response, status=status.HTTP_201_CREATED)
@@ -130,7 +145,8 @@ class GetTournamentByCodeView(APIView):
         'tournamentCity': tournament.getTournamentCity(),
         'tournamentState': tournament.getTournamentState(),
         'accessCode': tournament.getAccessCode(),
-        'schoolsEntered': tournament.getSchoolsEntered()
+        'schoolsEntered': tournament.getSchoolsEntered(),
+        'events': tournament.getEvents()
       }
       response = json.dumps(tournament_dict)
       return Response(response, status=status.HTTP_201_CREATED)
@@ -139,9 +155,7 @@ class GetTournamentByCodeView(APIView):
 class GetTournamentByIdView(APIView):
   permission_classes = (permissions.AllowAny,)
   def post(self, request):
-    print(request.data)
     tournamentId = request.data['tournamentId']
-    print(tournamentId)
     tournament = TournamentRegister.objects.using("speech-dev").get(tournamentId=tournamentId)
     if tournament:
       tournament_dict = {
@@ -156,7 +170,8 @@ class GetTournamentByIdView(APIView):
         'tournamentCity': tournament.getTournamentCity(),
         'tournamentState': tournament.getTournamentState(),
         'accessCode': tournament.getAccessCode(),
-        'schoolsEntered': tournament.getSchoolsEntered()
+        'schoolsEntered': tournament.getSchoolsEntered(),
+        'events': tournament.getEvents()
       }
       response = json.dumps(tournament_dict)
       return Response(response, status=status.HTTP_201_CREATED)
@@ -185,6 +200,48 @@ class GetCompetitorsView(APIView):
       return Response(response, status=status.HTTP_201_CREATED)
     return Response(status=status.HTTP_400_BAD_REQUEST)
 
+class GetCompetitorByIdView(APIView):
+  permission_classes = (permissions.AllowAny,)
+  def post(self, request):
+    competitorId = request.data['competitorId']
+    competitor = CompetitorSignup.objects.using("speech-dev").get(competitorId=competitorId)
+    if competitor:
+      competitor_dict = {
+        'competitorId': competitor.getCompetitorId(),
+        'schoolKey': competitor.getSchoolKey(),
+        'tournamentId': competitor.getTournamentId(),
+        'registerUserId': competitor.getRegisterUserId(),
+        'competitorSchool': competitor.getCompetitorSchool(),
+        'coachName': competitor.getCoachName(),
+        'coachEmail': competitor.getCoachEmail(),
+        'coachPhone': competitor.getCoachPhone()
+      }
+      response = json.dumps(competitor_dict)
+      return Response(response, status=status.HTTP_201_CREATED)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
+
+class GetEntriesView(APIView):
+  permission_classes = (permissions.AllowAny,)
+  def post(self, request):
+    competitorId = request.data['competitorId']
+    entries = Entries.objects.using("speech-dev").filter(competitorId=competitorId)
+    if entries:
+      entries_dict = []
+      for i in entries:
+        entry_dict = {
+          'entryId': i.getEntryId(),
+          'studentId': i.getStudentId(),
+          'competitorId': i.getCompetitorId(),
+          'schoolKey': i.getSchoolKey(),
+          'tournamentId': i.getTournamentId(),
+          'name': i.getName(),
+          'event': i.getEvent()
+        }
+        entries_dict.append(entry_dict)
+      response = json.dumps(entries_dict)
+      return Response(response, status=status.HTTP_201_CREATED)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
+
 class DeleteTournamentView(APIView):
   permission_classes = (permissions.AllowAny,)
   def post(self, request):
@@ -206,7 +263,7 @@ class DeleteCompetitorView(APIView):
       tournament = TournamentRegister.objects.using("speech-dev").get(tournamentId=clean_data['tournamentId'])
       tournament.schoolsEntered -= 1
       tournament.save(using="speech-dev")
-      CompetitorSignup.objects.using("speech-dev").filter(tournamentId=clean_data['tournamentId'], registerUserId=clean_data['registerUserId']).delete()
+      CompetitorSignup.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).delete()
       return Response(status=status.HTTP_201_CREATED)
     except Exception as e:
       print(e)

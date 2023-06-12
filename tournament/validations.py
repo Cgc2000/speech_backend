@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
-from .models import TournamentRegister
+from .models import TournamentRegister, CompetitorSignup
 UserModel = get_user_model()
 
 def custom_validation(data):
@@ -13,6 +13,7 @@ def custom_validation(data):
     managerPhone = data['managerPhone'].strip()
     tournamentCity = data['tournamentCity'].strip()
     tournamentState = data['tournamentState'].strip()
+    events = data['events']
 
     if not registerUserId or not UserModel.objects.using('speech-dev').filter(speechCoachUsersId=registerUserId).exists():
         raise ValidationError('User account error: Please make sure you are logged in')
@@ -34,6 +35,8 @@ def custom_validation(data):
 
     if not tournamentCity:
         raise ValidationError('A valid location is needed.')
+    if not events or len(events) == 0:
+        raise ValidationError('You must have at least one event.')
     return data
 
 
@@ -68,4 +71,22 @@ def competitor_validation(data):
     coachPhone = data['coachPhone']
     if not coachPhone:
         raise ValidationError('Please enter a coach phone.')
+    return data
+
+def entry_validation(data):
+    tournamentId = data['tournamentId']
+    if not tournamentId or not TournamentRegister.objects.using('speech-dev').filter(tournamentId=tournamentId).exists():
+        raise ValidationError('Tournament does not exist.')
+    competitorId = data['competitorId']
+    if not competitorId or not CompetitorSignup.objects.using('speech-dev').filter(competitorId=competitorId).exists():
+        raise ValidationError('Competitor school does not exist.')
+    schoolKey = data['schoolKey']
+    if not schoolKey:
+        raise ValidationError('Error finding competitor school; please ensure you are logged in and try again.')
+    name = data['name']
+    if not name:
+        raise ValidationError('Please enter a student name.')
+    event = data['event']
+    if not event:
+        raise ValidationError('Please select an event.')
     return data

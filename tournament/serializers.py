@@ -1,13 +1,13 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
-from .models import TournamentRegister, CompetitorSignup
+from .models import TournamentRegister, CompetitorSignup, Entries
 import random
 import string
 
 class TournamentRegisterSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = TournamentRegister
-		fields = ('registerUserId', 'tournamentName', 'tournamentLevel', 'hostSchool', 'managerName', 'managerEmail', 'managerPhone', 'tournamentCity', 'tournamentState')
+		fields = ('registerUserId', 'tournamentName', 'tournamentLevel', 'hostSchool', 'managerName', 'managerEmail', 'managerPhone', 'tournamentCity', 'tournamentState', 'events')
 	def create(self, clean_data):
 		start_id = -1
 		try:
@@ -22,7 +22,7 @@ class TournamentRegisterSerializer(serializers.ModelSerializer):
 			code = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(6)]).upper()
 			if not TournamentRegister.objects.using('speech-dev').filter(accessCode=code).exists():
 				code_valid = True
-		tournament = TournamentRegister(tournamentId=(start_id + 1), registerUserId=clean_data['registerUserId'], tournamentName=clean_data['tournamentName'], tournamentLevel=clean_data['tournamentLevel'], hostSchool=clean_data['hostSchool'], managerName=clean_data['managerName'], managerEmail=clean_data['managerEmail'], managerPhone=clean_data['managerPhone'], tournamentCity=clean_data['tournamentCity'], tournamentState=clean_data['tournamentState'], accessCode=code, schoolsEntered=0)
+		tournament = TournamentRegister(tournamentId=(start_id + 1), registerUserId=clean_data['registerUserId'], tournamentName=clean_data['tournamentName'], tournamentLevel=clean_data['tournamentLevel'], hostSchool=clean_data['hostSchool'], managerName=clean_data['managerName'], managerEmail=clean_data['managerEmail'], managerPhone=clean_data['managerPhone'], tournamentCity=clean_data['tournamentCity'], tournamentState=clean_data['tournamentState'], accessCode=code, schoolsEntered=0, events=clean_data['events'])
 		tournament.save(using='speech-dev')
 		return tournament
 
@@ -55,3 +55,29 @@ class CompetitorSignupSerializer(serializers.ModelSerializer):
 		tournament.schoolsEntered += 1
 		tournament.save(using="speech-dev")
 		return competitor
+
+class EntriesSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = Entries
+		fields = ('tournamentId', 'competitorId', 'schoolKey', 'name', 'event')
+	def create(self, clean_data):
+		student_id = 1
+		try:
+			student_id = Entries.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).get(name=clean_data['name']).studentId
+		except Exception:
+			try:
+				student_id = Entries.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).latest('studentId').studentId + 1
+			except Exception:
+				total_row_count = Entries.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).count()
+				if total_row_count == 0:
+					student_id = 1
+		start_id = 0
+		try:
+			start_id = Entries.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).latest('entryId').entryId
+		except Exception:
+			total_row_count = Entries.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).count()
+			if total_row_count == 0:
+				start_id = 0
+		entry = Entries(entryId=(start_id + 1), studentId = student_id, schoolKey = clean_data['schoolKey'], tournamentId=clean_data['tournamentId'], competitorId=clean_data['competitorId'], name=clean_data['name'], event=clean_data['event'])
+		entry.save(using='speech-dev')
+		return entry
