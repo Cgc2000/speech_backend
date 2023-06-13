@@ -49,7 +49,7 @@ class CompetitorSignupSerializer(serializers.ModelSerializer):
 			if total_row_count == 0:
 				start_key = 'A'
 		print(start_key)
-		competitor = CompetitorSignup(competitorId=(start_id + 1), schoolKey = start_key, registerUserId=clean_data['registerUserId'], tournamentId=clean_data['tournamentId'], competitorSchool=clean_data['competitorSchool'], coachName=clean_data['coachName'], coachEmail=clean_data['coachEmail'], coachPhone=clean_data['coachPhone'])
+		competitor = CompetitorSignup(competitorId=(start_id + 1), schoolKey = start_key, registerUserId=clean_data['registerUserId'], tournamentId=clean_data['tournamentId'], competitorSchool=clean_data['competitorSchool'], coachName=clean_data['coachName'], coachEmail=clean_data['coachEmail'], coachPhone=clean_data['coachPhone'], numEntries=0)
 		competitor.save(using='speech-dev')
 		tournament = TournamentRegister.objects.using("speech-dev").get(tournamentId=clean_data['tournamentId'])
 		tournament.schoolsEntered += 1
@@ -63,7 +63,7 @@ class EntriesSerializer(serializers.ModelSerializer):
 	def create(self, clean_data):
 		student_id = 1
 		try:
-			student_id = Entries.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).get(name=clean_data['name']).studentId
+			student_id = Entries.objects.using("speech-dev").filter(competitorId=clean_data['competitorId'], name=clean_data['name']).latest('studentId').studentId
 		except Exception:
 			try:
 				student_id = Entries.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).latest('studentId').studentId + 1
@@ -73,11 +73,20 @@ class EntriesSerializer(serializers.ModelSerializer):
 					student_id = 1
 		start_id = 0
 		try:
-			start_id = Entries.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).latest('entryId').entryId
+			start_id = Entries.objects.using("speech-dev").latest('entryId').entryId
 		except Exception:
-			total_row_count = Entries.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).count()
+			total_row_count = Entries.objects.using("speech-dev").count()
 			if total_row_count == 0:
 				start_id = 0
-		entry = Entries(entryId=(start_id + 1), studentId = student_id, schoolKey = clean_data['schoolKey'], tournamentId=clean_data['tournamentId'], competitorId=clean_data['competitorId'], name=clean_data['name'], event=clean_data['event'])
-		entry.save(using='speech-dev')
+		if not clean_data['additionalNames'] or len(clean_data['additionalNames']) == 0:
+			entry = Entries(entryId=(start_id + 1), studentId = student_id, schoolKey = clean_data['schoolKey'], tournamentId=clean_data['tournamentId'], competitorId=clean_data['competitorId'], name=clean_data['name'], event=clean_data['event'])
+			entry.save(using='speech-dev')
+		else:
+			print(clean_data['additionalNames'])
+			entry = Entries(entryId=(start_id + 1), studentId = student_id, schoolKey = clean_data['schoolKey'], tournamentId=clean_data['tournamentId'], competitorId=clean_data['competitorId'], name=clean_data['name'], event=clean_data['event'], additionalNames=clean_data['additionalNames'])
+			entry.save(using='speech-dev')
+		entries_count = Entries.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).count()
+		competitor = CompetitorSignup.objects.using("speech-dev").get(competitorId=clean_data['competitorId'])
+		competitor.numEntries = entries_count
+		competitor.save(using="speech-dev")
 		return entry

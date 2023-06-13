@@ -14,5 +14,6 @@ urlpatterns = [
 	path('get_competitors/', views.GetCompetitorsView.as_view(), name='get_competitors'),
 	path('get_competitor_by_id/', views.GetCompetitorByIdView.as_view(), name='get_competitor_by_id'),
 	path('post_entry/', views.EntriesView.as_view(), name='post_entry'),
-	path('get_entries/', views.GetEntriesView.as_view(), name='get_entries')
+	path('get_entries/', views.GetEntriesView.as_view(), name='get_entries'),
+	path('delete_entry/', views.DeleteEntryView.as_view(), name='delete_entry')
 ]

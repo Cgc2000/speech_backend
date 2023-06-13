@@ -57,6 +57,7 @@ class CompetitorSignup(models.Model):
   coachName = models.TextField()
   coachEmail = models.TextField()
   coachPhone = models.TextField()
+  numEntries = models.IntegerField()
   def getCompetitorId(self):
     return self.competitorId
   def getSchoolKey(self):
@@ -73,6 +74,8 @@ class CompetitorSignup(models.Model):
     return self.coachEmail
   def getCoachPhone(self):
     return self.coachPhone
+  def getNumEntries(self):
+    return self.numEntries
 
   class Meta:
       managed = True
@@ -86,6 +89,9 @@ class Entries(models.Model):
   tournamentId = models.IntegerField()
   name = models.TextField()
   event = models.TextField()
+  additionalNames = ArrayField(
+    models.TextField(null=False)
+  )
   def getEntryId(self):
     return self.entryId
   def getStudentId(self):
@@ -100,6 +106,10 @@ class Entries(models.Model):
     return self.name
   def getEvent(self):
     return self.event
+  def getAdditionalNames(self):
+    if self.additionalNames:
+      return self.additionalNames
+    return []
 
   class Meta:
       managed = True

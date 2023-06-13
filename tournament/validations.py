@@ -1,6 +1,6 @@
 from django.core.exceptions import ValidationError
 from django.contrib.auth import get_user_model
-from .models import TournamentRegister, CompetitorSignup
+from .models import TournamentRegister, CompetitorSignup, Entries
 UserModel = get_user_model()
 
 def custom_validation(data):
@@ -89,4 +89,13 @@ def entry_validation(data):
     event = data['event']
     if not event:
         raise ValidationError('Please select an event.')
+    return data
+
+def delete_entry_validation(data):
+    competitorId = data['competitorId']
+    if not competitorId or not CompetitorSignup.objects.using('speech-dev').filter(competitorId=competitorId).exists():
+        raise ValidationError('Tournament does not exist.')
+    entryId = data['entryId']
+    if not entryId or not Entries.objects.using('speech-dev').filter(entryId=entryId).exists():
+        raise ValidationError('Tournament does not exist.')
     return data

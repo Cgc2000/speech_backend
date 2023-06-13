@@ -4,7 +4,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import TournamentRegisterSerializer, CompetitorSignupSerializer, EntriesSerializer
 from rest_framework import permissions, status
-from .validations import custom_validation, user_validation, tournament_validation, competitor_validation, entry_validation
+from .validations import custom_validation, user_validation, tournament_validation, competitor_validation, entry_validation, delete_entry_validation
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.forms.models import model_to_dict
@@ -42,7 +42,18 @@ class EntriesView(APIView):
     if serializer.is_valid(raise_exception=True):
       entry = serializer.create(clean_data)
       if entry:
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        entry_dict = {
+          'entryId': entry.getEntryId(),
+          'studentId': entry.getStudentId(),
+          'competitorId': entry.getCompetitorId(),
+          'schoolKey': entry.getSchoolKey(),
+          'tournamentId': entry.getTournamentId(),
+          'name': entry.getName(),
+          'event': entry.getEvent(),
+          'additionalNames': entry.getAdditionalNames()
+        }
+        response = json.dumps(entry_dict)
+        return Response(response, status=status.HTTP_201_CREATED)
     return Response(status=status.HTTP_400_BAD_REQUEST)
 
 class GetUserTournamentsView(APIView):
@@ -83,6 +94,7 @@ class GetUserEnteredView(APIView):
         tournamentId = i.getTournamentId()
         tournament = TournamentRegister.objects.using("speech-dev").get(tournamentId=tournamentId)
         tournament_dicts.append({
+        'competitorSchool': i.getCompetitorSchool(),
         'competitorId': i.getCompetitorId(),
         'tournamentId': tournament.getTournamentId(),
         'registerUserId': tournament.getRegisterUserId(),
@@ -193,7 +205,8 @@ class GetCompetitorsView(APIView):
           'competitorSchool': i.getCompetitorSchool(),
           'coachName': i.getCoachName(),
           'coachEmail': i.getCoachEmail(),
-          'coachPhone': i.getCoachPhone()
+          'coachPhone': i.getCoachPhone(),
+          'numEntries': i.getNumEntries()
         }
         competitors_dicts.append(competitor_dict)
       response = json.dumps(competitors_dicts)
@@ -235,7 +248,8 @@ class GetEntriesView(APIView):
           'schoolKey': i.getSchoolKey(),
           'tournamentId': i.getTournamentId(),
           'name': i.getName(),
-          'event': i.getEvent()
+          'event': i.getEvent(),
+          'additionalNames': i.getAdditionalNames()
         }
         entries_dict.append(entry_dict)
       response = json.dumps(entries_dict)
@@ -249,6 +263,7 @@ class DeleteTournamentView(APIView):
     try:
       TournamentRegister.objects.using("speech-dev").filter(tournamentId=clean_data['tournamentId']).delete()
       CompetitorSignup.objects.using("speech-dev").filter(tournamentId=clean_data['tournamentId']).delete()
+      Entries.objects.using("speech-dev").filter(tournamentId=clean_data['tournamentId']).delete()
       return Response(status=status.HTTP_201_CREATED)
     except Exception as e:
       print(e)
@@ -264,6 +279,23 @@ class DeleteCompetitorView(APIView):
       tournament.schoolsEntered -= 1
       tournament.save(using="speech-dev")
       CompetitorSignup.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).delete()
+      Entries.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).delete()
+      return Response(status=status.HTTP_201_CREATED)
+    except Exception as e:
+      print(e)
+      return Response(status=status.HTTP_400_BAD_REQUEST)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
+
+class DeleteEntryView(APIView):
+  permission_classes = (permissions.AllowAny,)
+  def post(self, request):
+    clean_data = delete_entry_validation(request.data)
+    try:
+      Entries.objects.using("speech-dev").filter(entryId=clean_data['entryId']).delete()
+      entries_count = Entries.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).count()
+      competitor = CompetitorSignup.objects.using("speech-dev").get(competitorId=clean_data['competitorId'])
+      competitor.numEntries = entries_count
+      competitor.save(using="speech-dev")
       return Response(status=status.HTTP_201_CREATED)
     except Exception as e:
       print(e)
