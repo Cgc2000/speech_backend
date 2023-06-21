@@ -301,3 +301,31 @@ class DeleteEntryView(APIView):
       print(e)
       return Response(status=status.HTTP_400_BAD_REQUEST)
     return Response(status=status.HTTP_400_BAD_REQUEST)
+
+class GetTournamentEntriesView(APIView):
+  permission_classes = (permissions.AllowAny,)
+  def post(self, request):
+    clean_data = tournament_validation(request.data)
+    try:
+      entries = Entries.objects.using("speech-dev").filter(tournamentId=clean_data['tournamentId'])
+      if entries:
+        entries_dict = []
+        for i in entries:
+          entry_dict = {
+            'entryId': i.getEntryId(),
+            'studentId': i.getStudentId(),
+            'competitorId': i.getCompetitorId(),
+            'schoolKey': i.getSchoolKey(),
+            'tournamentId': i.getTournamentId(),
+            'name': i.getName(),
+            'event': i.getEvent(),
+            'additionalNames': i.getAdditionalNames()
+          }
+          entries_dict.append(entry_dict)
+        response = json.dumps(entries_dict)
+        return Response(response, status=status.HTTP_201_CREATED)
+      return Response(status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+      print(e)
+      return Response(status=status.HTTP_400_BAD_REQUEST)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
