@@ -43,7 +43,9 @@ class CompetitorSignupSerializer(serializers.ModelSerializer):
 			return chr((ord(s.upper())+1))
 		try:
 			old_key = CompetitorSignup.objects.using("speech-dev").filter(tournamentId=clean_data['tournamentId']).latest('schoolKey').schoolKey
-			start_key = next_alpha(start_key)
+			print(old_key)
+			start_key = next_alpha(old_key)
+			print(start_key)
 		except Exception:
 			total_row_count = CompetitorSignup.objects.using("speech-dev").filter(tournamentId=clean_data['tournamentId']).count()
 			if total_row_count == 0:
