@@ -17,6 +17,9 @@ class TournamentRegister(models.Model):
   events = ArrayField(
     models.TextField()
   )
+  rooms = ArrayField(
+    models.TextField()
+  )
   def getTournamentId(self):
     return self.tournamentId
   def getRegisterUserId(self):
@@ -43,6 +46,8 @@ class TournamentRegister(models.Model):
     return self.schoolsEntered
   def getEvents(self):
     return self.events
+  def getRooms(self):
+    return self.rooms
 
   class Meta:
       managed = True

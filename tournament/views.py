@@ -77,7 +77,8 @@ class GetUserTournamentsView(APIView):
         'tournamentState': i.getTournamentState(),
         'accessCode': i.getAccessCode(),
         'schoolsEntered': i.getSchoolsEntered(),
-        'events': i.getEvents()
+        'events': i.getEvents(),
+        'rooms': i.getRooms()
       })
       response = json.dumps(tournament_dicts)
       return Response(response, status=status.HTTP_201_CREATED)
@@ -108,7 +109,8 @@ class GetUserEnteredView(APIView):
         'tournamentState': tournament.getTournamentState(),
         'accessCode': tournament.getAccessCode(),
         'schoolsEntered': tournament.getSchoolsEntered(),
-        'events': tournament.getEvents()
+        'events': tournament.getEvents(),
+        'rooms': tournament.getRooms()
       })
       response = json.dumps(tournament_dicts)
       return Response(response, status=status.HTTP_201_CREATED)
@@ -134,7 +136,8 @@ class GetAllTournamentsView(APIView):
         'tournamentState': i.getTournamentState(),
         'accessCode': i.getAccessCode(),
         'schoolsEntered': i.getSchoolsEntered(),
-        'events': i.getEvents()
+        'events': i.getEvents(),
+        'rooms': i.getRooms()
       })
       response = json.dumps(tournament_dicts)
       return Response(response, status=status.HTTP_201_CREATED)
@@ -158,7 +161,8 @@ class GetTournamentByCodeView(APIView):
         'tournamentState': tournament.getTournamentState(),
         'accessCode': tournament.getAccessCode(),
         'schoolsEntered': tournament.getSchoolsEntered(),
-        'events': tournament.getEvents()
+        'events': tournament.getEvents(),
+        'rooms': tournament.getRooms()
       }
       response = json.dumps(tournament_dict)
       return Response(response, status=status.HTTP_201_CREATED)
@@ -183,7 +187,8 @@ class GetTournamentByIdView(APIView):
         'tournamentState': tournament.getTournamentState(),
         'accessCode': tournament.getAccessCode(),
         'schoolsEntered': tournament.getSchoolsEntered(),
-        'events': tournament.getEvents()
+        'events': tournament.getEvents(),
+        'rooms': tournament.getRooms()
       }
       response = json.dumps(tournament_dict)
       return Response(response, status=status.HTTP_201_CREATED)
@@ -335,28 +340,30 @@ class GetEventsView(APIView):
   def post(self, request):
     clean_data = tournament_validation(request.data)
     try:
-      entries = Entries.objects.using("speech-dev").filter(tournamentId=clean_data['tournamentId'])
-      if entries:
-        events_dict = []
-        for event in clean_data['events']:
-          event_dict = []
-          for i in entries:
-            if i.getEvent() == event:
-              entry_dict = {
-                'entryId': i.getEntryId(),
-                'studentId': i.getStudentId(),
-                'competitorId': i.getCompetitorId(),
-                'schoolKey': i.getSchoolKey(),
-                'tournamentId': i.getTournamentId(),
-                'name': i.getName(),
-                'event': i.getEvent(),
-                'additionalNames': i.getAdditionalNames()
-              }
-              event_dict.append(entry_dict)
-          events_dict.append([event, event_dict])
-        response = json.dumps(events_dict)
-        return Response(response, status=status.HTTP_201_CREATED)
-      return Response(status=status.HTTP_400_BAD_REQUEST)
+      try:
+        entries = Entries.objects.using("speech-dev").filter(tournamentId=clean_data['tournamentId'])
+      except Exception as e:
+        print(e)
+        entries = []
+      events_dict = []
+      for event in clean_data['events']:
+        event_dict = []
+        for i in entries:
+          if i.getEvent() == event:
+            entry_dict = {
+              'entryId': i.getEntryId(),
+              'studentId': i.getStudentId(),
+              'competitorId': i.getCompetitorId(),
+              'schoolKey': i.getSchoolKey(),
+              'tournamentId': i.getTournamentId(),
+              'name': i.getName(),
+              'event': i.getEvent(),
+              'additionalNames': i.getAdditionalNames()
+            }
+            event_dict.append(entry_dict)
+        events_dict.append([event, event_dict])
+      response = json.dumps(events_dict)
+      return Response(response, status=status.HTTP_201_CREATED)
     except Exception as e:
       print(e)
       return Response(status=status.HTTP_400_BAD_REQUEST)

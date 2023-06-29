@@ -7,7 +7,7 @@ import string
 class TournamentRegisterSerializer(serializers.ModelSerializer):
 	class Meta:
 		model = TournamentRegister
-		fields = ('registerUserId', 'tournamentName', 'tournamentLevel', 'hostSchool', 'managerName', 'managerEmail', 'managerPhone', 'tournamentCity', 'tournamentState', 'events')
+		fields = ('registerUserId', 'tournamentName', 'tournamentLevel', 'hostSchool', 'managerName', 'managerEmail', 'managerPhone', 'tournamentCity', 'tournamentState', 'events', 'rooms')
 	def create(self, clean_data):
 		start_id = -1
 		try:
@@ -22,7 +22,7 @@ class TournamentRegisterSerializer(serializers.ModelSerializer):
 			code = ''.join([random.choice(string.ascii_letters + string.digits) for n in range(6)]).upper()
 			if not TournamentRegister.objects.using('speech-dev').filter(accessCode=code).exists():
 				code_valid = True
-		tournament = TournamentRegister(tournamentId=(start_id + 1), registerUserId=clean_data['registerUserId'], tournamentName=clean_data['tournamentName'], tournamentLevel=clean_data['tournamentLevel'], hostSchool=clean_data['hostSchool'], managerName=clean_data['managerName'], managerEmail=clean_data['managerEmail'], managerPhone=clean_data['managerPhone'], tournamentCity=clean_data['tournamentCity'], tournamentState=clean_data['tournamentState'], accessCode=code, schoolsEntered=0, events=clean_data['events'])
+		tournament = TournamentRegister(tournamentId=(start_id + 1), registerUserId=clean_data['registerUserId'], tournamentName=clean_data['tournamentName'], tournamentLevel=clean_data['tournamentLevel'], hostSchool=clean_data['hostSchool'], managerName=clean_data['managerName'], managerEmail=clean_data['managerEmail'], managerPhone=clean_data['managerPhone'], tournamentCity=clean_data['tournamentCity'], tournamentState=clean_data['tournamentState'], accessCode=code, schoolsEntered=0, events=clean_data['events'], rooms=clean_data['rooms'])
 		tournament.save(using='speech-dev')
 		return tournament
 
