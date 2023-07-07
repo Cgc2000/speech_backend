@@ -63,6 +63,7 @@ class CompetitorSignup(models.Model):
   coachEmail = models.TextField()
   coachPhone = models.TextField()
   numEntries = models.IntegerField()
+  numJudges = models.IntegerField()
   def getCompetitorId(self):
     return self.competitorId
   def getSchoolKey(self):
@@ -80,6 +81,8 @@ class CompetitorSignup(models.Model):
   def getCoachPhone(self):
     return self.coachPhone
   def getNumEntries(self):
+    return self.numEntries
+  def getNumJudges(self):
     return self.numEntries
 
   class Meta:
@@ -119,3 +122,36 @@ class Entries(models.Model):
   class Meta:
       managed = True
       db_table = 'speech_entries'
+
+class Judges(models.Model):
+  judgeId = models.IntegerField(primary_key=True)
+  judgeCode = models.IntegerField()
+  competitorId = models.IntegerField()
+  schoolKey = models.CharField(max_length=1)
+  tournamentId = models.IntegerField()
+  name = models.TextField()
+  email = models.TextField()
+  password = models.TextField(null=False)
+  isActivated = models.BooleanField()
+  def getJudgeId(self):
+    return self.judgeId
+  def getJudgeCode(self):
+    return self.judgeId
+  def getCompetitorId(self):
+    return self.competitorId
+  def getSchoolKey(self):
+    return self.schoolKey
+  def getTournamentId(self):
+    return self.tournamentId
+  def getName(self):
+    return self.name
+  def getEmail(self):
+    return self.email
+  def getPassword(self):
+    return self.password
+  def getIsActivated(self):
+    return self.isActivated
+
+  class Meta:
+      managed = True
+      db_table = 'speech_judges'

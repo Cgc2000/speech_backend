@@ -2,14 +2,14 @@ from django.contrib.auth import get_user_model, login, logout
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import TournamentRegisterSerializer, CompetitorSignupSerializer, EntriesSerializer
+from .serializers import TournamentRegisterSerializer, CompetitorSignupSerializer, EntriesSerializer, JudgesSerializer
 from rest_framework import permissions, status
-from .validations import custom_validation, user_validation, tournament_validation, competitor_validation, entry_validation, delete_entry_validation
+from .validations import custom_validation, user_validation, tournament_validation, competitor_validation, entry_validation, delete_entry_validation, judge_validation, delete_judge_validation
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse
 from django.forms.models import model_to_dict
 import json
-from .models import TournamentRegister, CompetitorSignup, Entries
+from .models import TournamentRegister, CompetitorSignup, Entries, Judges
 
 
 class TournamentRegisterView(APIView):
@@ -55,6 +55,30 @@ class EntriesView(APIView):
         response = json.dumps(entry_dict)
         return Response(response, status=status.HTTP_201_CREATED)
     return Response(status=status.HTTP_400_BAD_REQUEST)
+
+class JudgesView(APIView):
+  permission_classes = (permissions.AllowAny,)
+  def post(self, request):
+    clean_data = judge_validation(request.data)
+    serializer = JudgesSerializer(data=clean_data)
+    if serializer.is_valid(raise_exception=True):
+      judge = serializer.create(clean_data)
+      print("nice!")
+      if judge:
+        judge_dict = {
+          'judgeId': judge.getJudgeId(),
+          'judgeCode': judge.getJudgeCode(),
+          'competitorId': judge.getCompetitorId(),
+          'schoolKey': judge.getSchoolKey(),
+          'tournamentId': judge.getTournamentId(),
+          'name': judge.getName(),
+          'email': judge.getEmail(),
+          'isActivated': judge.getIsActivated()
+        }
+        response = json.dumps(judge_dict)
+        return Response(response, status=status.HTTP_201_CREATED)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
+
 
 class GetUserTournamentsView(APIView):
   permission_classes = (permissions.AllowAny,)
@@ -261,6 +285,29 @@ class GetEntriesView(APIView):
       return Response(response, status=status.HTTP_201_CREATED)
     return Response(status=status.HTTP_400_BAD_REQUEST)
 
+class GetJudgesView(APIView):
+  permission_classes = (permissions.AllowAny,)
+  def post(self, request):
+    competitorId = request.data['competitorId']
+    judges = Judges.objects.using("speech-dev").filter(competitorId=competitorId)
+    if judges:
+      judges_dict = []
+      for i in judges:
+        judge_dict = {
+          'judgeId': i.getJudgeId(),
+          'judgeCode': i.getJudgeCode(),
+          'competitorId': i.getCompetitorId(),
+          'schoolKey': i.getSchoolKey(),
+          'tournamentId': i.getTournamentId(),
+          'name': i.getName(),
+          'email': i.getEmail(),
+          'isActivated': i.getIsActivated()
+        }
+        judges_dict.append(judge_dict)
+      response = json.dumps(judges_dict)
+      return Response(response, status=status.HTTP_201_CREATED)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
+
 class DeleteTournamentView(APIView):
   permission_classes = (permissions.AllowAny,)
   def post(self, request):
@@ -300,6 +347,22 @@ class DeleteEntryView(APIView):
       entries_count = Entries.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).count()
       competitor = CompetitorSignup.objects.using("speech-dev").get(competitorId=clean_data['competitorId'])
       competitor.numEntries = entries_count
+      competitor.save(using="speech-dev")
+      return Response(status=status.HTTP_201_CREATED)
+    except Exception as e:
+      print(e)
+      return Response(status=status.HTTP_400_BAD_REQUEST)
+    return Response(status=status.HTTP_400_BAD_REQUEST)
+
+class DeleteJudgeView(APIView):
+  permission_classes = (permissions.AllowAny,)
+  def post(self, request):
+    clean_data = delete_judge_validation(request.data)
+    try:
+      Judges.objects.using("speech-dev").filter(judgeId=clean_data['judgeId']).delete()
+      judges_count = Judges.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).count()
+      competitor = CompetitorSignup.objects.using("speech-dev").get(competitorId=clean_data['competitorId'])
+      competitor.numJudges = judges_count
       competitor.save(using="speech-dev")
       return Response(status=status.HTTP_201_CREATED)
     except Exception as e:

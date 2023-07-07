@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
-from .models import TournamentRegister, CompetitorSignup, Entries
+from .models import TournamentRegister, CompetitorSignup, Entries, Judges
 import random
 import string
 
@@ -51,7 +51,7 @@ class CompetitorSignupSerializer(serializers.ModelSerializer):
 			if total_row_count == 0:
 				start_key = 'A'
 		print(start_key)
-		competitor = CompetitorSignup(competitorId=(start_id + 1), schoolKey = start_key, registerUserId=clean_data['registerUserId'], tournamentId=clean_data['tournamentId'], competitorSchool=clean_data['competitorSchool'], coachName=clean_data['coachName'], coachEmail=clean_data['coachEmail'], coachPhone=clean_data['coachPhone'], numEntries=0)
+		competitor = CompetitorSignup(competitorId=(start_id + 1), schoolKey = start_key, registerUserId=clean_data['registerUserId'], tournamentId=clean_data['tournamentId'], competitorSchool=clean_data['competitorSchool'], coachName=clean_data['coachName'], coachEmail=clean_data['coachEmail'], coachPhone=clean_data['coachPhone'], numEntries=0, numJudges=0)
 		competitor.save(using='speech-dev')
 		tournament = TournamentRegister.objects.using("speech-dev").get(tournamentId=clean_data['tournamentId'])
 		tournament.schoolsEntered += 1
@@ -92,3 +92,30 @@ class EntriesSerializer(serializers.ModelSerializer):
 		competitor.numEntries = entries_count
 		competitor.save(using="speech-dev")
 		return entry
+
+class JudgesSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = Judges
+		fields = ('tournamentId', 'competitorId', 'schoolKey', 'name', 'email')
+	def create(self, clean_data):
+		judge_code = 1
+		try:
+			judge_code = Judges.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).latest('judgeCode').judgeCode + 1
+		except Exception:
+			total_row_count = Judges.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).count()
+			if total_row_count == 0:
+				judge_code = 1
+		start_id = 0
+		try:
+			start_id = Judges.objects.using("speech-dev").latest('judgeId').judgeId
+		except Exception:
+			total_row_count = Judges.objects.using("speech-dev").count()
+			if total_row_count == 0:
+				start_id = 0
+		judge = Judges(judgeId=(start_id + 1), judgeCode=judge_code, schoolKey = clean_data['schoolKey'], tournamentId=clean_data['tournamentId'], competitorId=clean_data['competitorId'], name=clean_data['name'], email=clean_data['email'], isActivated=False)
+		judge.save(using='speech-dev')
+		judges_count = Judges.objects.using("speech-dev").filter(competitorId=clean_data['competitorId']).count()
+		competitor = CompetitorSignup.objects.using("speech-dev").get(competitorId=clean_data['competitorId'])
+		competitor.numJudges = judges_count
+		competitor.save(using="speech-dev")
+		return judge

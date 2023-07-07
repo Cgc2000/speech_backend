@@ -18,4 +18,7 @@ urlpatterns = [
 	path('delete_entry/', views.DeleteEntryView.as_view(), name='delete_entry'),
 	path('get_tournament_entries/', views.GetTournamentEntriesView.as_view(), name='get_tournament_entries'),
 	path('get_events/', views.GetEventsView.as_view(), name='get_events'),
+	path('post_judge/', views.JudgesView.as_view(), name='post_judge'),
+	path('get_judges/', views.GetJudgesView.as_view(), name='get_judges'),
+	path('delete_judge/', views.DeleteJudgeView.as_view(), name='delete_judge')
 ]
